@@ -1,0 +1,8 @@
+.footer-section {
+  height: 10rem;
+}
+@media only screen and (max-width: 600px) {
+  .footer-maine-sec {
+    width: 100% !important;
+  }
+}
