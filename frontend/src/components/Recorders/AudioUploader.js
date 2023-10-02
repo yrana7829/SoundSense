@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import CustomizedButtons from './CustomizedButtons';
 
-const AudioUploader = () => {
+const AudioUploader = ({}) => {
+  const BACKEND_URL = 'http://localhost:5000';
   const [audioFile, setAudioFile] = useState(null);
   const audioInputRef = useRef(null);
 
@@ -11,11 +12,14 @@ const AudioUploader = () => {
   };
 
   const handleUpload = () => {
+    console.log('Handle upload is started');
     // If audioFile is null or empty, no file has been selected.
     if (!audioFile) {
       alert('Please select an audio file.');
       return;
     }
+
+    // onClick(audioFile);
 
     // Now you can send the audioFile to the backend for further processing.
     // Example: Create a FormData object to send the file to the server.
@@ -23,8 +27,8 @@ const AudioUploader = () => {
     formData.append('audio', audioFile);
 
     // You can now make a POST request to the backend with the formData.
-    // Example using fetch:
-    fetch('/upload-audio', {
+    // Use the absolute backend URL to ensure it goes to the correct route.
+    fetch(`${BACKEND_URL}/upload_audio`, {
       method: 'POST',
       body: formData,
     })

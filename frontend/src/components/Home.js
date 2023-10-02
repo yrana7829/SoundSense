@@ -1,11 +1,141 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
+import axios from 'axios';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import AudioRecorder from './Recorders/AudioRecorder';
-import AudioUploader from './Recorders/AudioUploader';
+import audioBufferToWav from 'audiobuffer-to-wav';
 import img from '../assets/bottom.png';
+import CustomizedButtons from '../components/Recorders/CustomizedButtons';
 
 const Home = () => {
+  const BACKEND_URL = 'http://localhost:5000';
+  const [audioFile, setAudioFile] = useState(null);
+  const audioInputRef = useRef(null);
+  const [transcription, setTranscription] = useState(null);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    setAudioFile(file);
+  };
+
+  // const handleUpload = () => {
+  //   console.log('Handle upload is started');
+  //   // If audioFile is null or empty, no file has been selected.
+  //   if (!audioFile) {
+  //     alert('Please select an audio file.');
+  //     return;
+  //   }
+
+  //   // Read the file contents using FileReader
+  //   const reader = new FileReader();
+  //   reader.onload = (event) => {
+  //     // event.target.result contains the file contents as a ArrayBuffer
+  //     const fileContentArrayBuffer = event.target.result;
+
+  //     // Convert the ArrayBuffer to a Blob with .wav format
+  //     const audioBlob = new Blob([fileContentArrayBuffer], {
+  //       type: 'audio/wav', // Set the appropriate MIME type for .wav
+  //     });
+
+  //     // Log the audioBlob to verify its contents
+  //     console.log('audioBlob:', audioBlob);
+
+  //     const audioBlobURL = URL.createObjectURL(audioBlob); // Create a URL for the Blob
+  //     localStorage.setItem(
+  //       'uploadedAudio',
+  //       JSON.stringify({ audio: audioBlobURL }) // Store the URL in local storage
+  //     );
+
+  //     setAudioFile(audioBlob);
+  //   };
+
+  //   // Start reading the file as an ArrayBuffer
+  //   reader.readAsArrayBuffer(audioFile);
+  // };
+
+  const handleUpload = () => {
+    console.log('Handle upload is started');
+    // If audioFile is null or empty, no file has been selected.
+    if (!audioFile) {
+      alert('Please select an audio file.');
+      return;
+    }
+
+    // Read the file contents using FileReader
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      // event.target.result contains the file contents as a ArrayBuffer
+      const fileContentArrayBuffer = event.target.result;
+
+      // Convert the ArrayBuffer to a Blob with .wav format
+      const audioBlob = new Blob([fileContentArrayBuffer], {
+        type: 'audio/wav', // Set the appropriate MIME type for .wav
+      });
+
+      // Log the audioBlob to verify its contents
+      console.log('audioBlob:', audioBlob);
+
+      const audioBlobURL = URL.createObjectURL(audioBlob); // Create a URL for the Blob
+      localStorage.setItem(
+        'uploadedAudio',
+        JSON.stringify({ audio: audioBlobURL }) // Store the URL in local storage
+      );
+
+      setAudioFile(audioBlob);
+    };
+
+    // Start reading the file as an ArrayBuffer
+    reader.readAsArrayBuffer(audioFile);
+  };
+
+  const wav2vec2Handler = async (audioFile) => {
+    console.log('wav2vec2 model is currently inactive, Please use Whisper');
+  };
+
+  const whisperHandler = () => {
+    console.log('Whisper model is started');
+
+    // Retrieve the uploaded audio data from local storage
+    const uploadedAudioData = JSON.parse(localStorage.getItem('uploadedAudio'));
+
+    if (uploadedAudioData) {
+      // Retrieve the audio data URL and convert it back to a Blob
+      const audioDataURL = uploadedAudioData.audio;
+      fetch(audioDataURL)
+        .then((response) => response.blob())
+        .then((audioBlob) => {
+          // Create a new FormData object
+          const formData = new FormData();
+
+          // Create a new Blob with the .wav format and name it 'audio.wav'
+          const audioWavBlob = new Blob([audioBlob], { type: 'audio/wav' });
+
+          // Append the 'audio.wav' Blob to the FormData
+          formData.append('audio', audioWavBlob, 'audio.wav');
+
+          // Make a POST request to the 'whisper_transcribe' endpoint.
+          axios
+            .post(`${BACKEND_URL}/whisper_transcribe`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            })
+            .then((response) => {
+              console.log(
+                'Whisper transcription successful:',
+                response.data.transcription
+              );
+              setTranscription(response.data.transcription);
+            })
+            .catch((error) => {
+              console.error('Error during Whisper transcription:', error);
+            });
+        });
+    } else {
+      console.error('Uploaded audio data not found in local storage.');
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -50,13 +180,91 @@ const Home = () => {
         </div>
         <div>
           <h5>Upload An Audio File</h5>
-          <AudioUploader />
+          {/* <AudioUploader onClick={wav2vec2Handler} /> */}
+          <div
+            style={{
+              background: '#66b2b2',
+              padding: '10px',
+              borderRadius: '5px',
+            }}
+          >
+            {/* Use native file input */}
+            <input
+              type='file'
+              accept='audio/*'
+              ref={audioInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            {/* Use the same CustomizedButtons component for both actions */}
+            <CustomizedButtons
+              text='Choose Audio'
+              // Clicking the label will trigger the hidden file input
+              onClick={() => audioInputRef.current.click()}
+            />
+            <CustomizedButtons text='Upload' onClick={handleUpload} />
+            {/* Display the selected file name, if available */}
+            {audioFile && <p>Selected file: {audioFile.name}</p>}
+          </div>
         </div>
       </div>
 
       <div
         style={{
-          height: '250px',
+          height: '50px',
+          justifyContent: 'center', // Center horizontally
+          alignItems: 'center', // Center vertically
+          textAlign: 'center',
+          margin: '2% 30%',
+        }}
+      >
+        <button
+          id='button2'
+          style={{
+            padding: '10px',
+            borderRadius: '10px',
+            background: '#66b2b2',
+            fontSize: 'large',
+          }}
+          onClick={() => whisperHandler(audioFile)}
+        >
+          Transcribe with Whisper
+        </button>
+      </div>
+      {transcription && (
+        <div
+          style={{
+            margin: '10px 40px',
+            height: 'auto',
+            border: '1px solid gray',
+            padding: '20px',
+            borderRadius: '10px',
+          }}
+        >
+          <p>
+            <h3
+              style={{
+                justifyContent: 'center', // Center horizontally
+                alignItems: 'center', // Center vertically
+                textAlign: 'center',
+                marginBottom: '20px',
+                paddingBottom: '10px',
+                borderBottom: '2px solid gray',
+              }}
+            >
+              Transcripted Audio
+            </h3>
+            <h6>
+              <p>{transcription}</p>
+            </h6>
+          </p>
+        </div>
+      )}
+
+      <div
+        style={{
+          marginTop: '20px',
+          height: '200px',
           justifyContent: 'center', // Center horizontally
           alignItems: 'center', // Center vertically
           textAlign: 'center',

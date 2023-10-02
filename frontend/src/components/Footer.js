@@ -8,7 +8,7 @@ const Footer = () => {
       style={{
         width: '100%',
         background: '#66b2b2',
-        position: 'absolute',
+        position: '',
         bottom: '0px',
       }}
     >
@@ -25,8 +25,8 @@ const Footer = () => {
               marginLeft: '2.4rem',
             }}
           >
-            © 2023 PG Dekho | All Rights Reserved | Design & Develop by
-            BizzeOnline
+            © 2023 Sound Sense | All Rights Reserved | Design & Develop by @
+            Yrana
           </div>
         </Col>
         <Col
