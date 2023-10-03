@@ -6,51 +6,30 @@ import AudioRecorder from './Recorders/AudioRecorder';
 import audioBufferToWav from 'audiobuffer-to-wav';
 import img from '../assets/bottom.png';
 import CustomizedButtons from '../components/Recorders/CustomizedButtons';
+import { CircularProgress, Typography } from '@mui/material';
 
 const Home = () => {
   const BACKEND_URL = 'http://localhost:5000';
   const [audioFile, setAudioFile] = useState(null);
   const audioInputRef = useRef(null);
   const [transcription, setTranscription] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     setAudioFile(file);
   };
 
-  // const handleUpload = () => {
-  //   console.log('Handle upload is started');
-  //   // If audioFile is null or empty, no file has been selected.
-  //   if (!audioFile) {
-  //     alert('Please select an audio file.');
-  //     return;
+  // const loadModelHandler = async () => {
+  //   try {
+  //     // Make a GET request to load the model
+  //     const response = await axios.get(`${BACKEND_URL}/load_model`);
+
+  //     // Handle the response as needed
+  //     console.log(response.data.message);
+  //   } catch (error) {
+  //     console.error('Error loading the model:', error);
   //   }
-
-  //   // Read the file contents using FileReader
-  //   const reader = new FileReader();
-  //   reader.onload = (event) => {
-  //     // event.target.result contains the file contents as a ArrayBuffer
-  //     const fileContentArrayBuffer = event.target.result;
-
-  //     // Convert the ArrayBuffer to a Blob with .wav format
-  //     const audioBlob = new Blob([fileContentArrayBuffer], {
-  //       type: 'audio/wav', // Set the appropriate MIME type for .wav
-  //     });
-
-  //     // Log the audioBlob to verify its contents
-  //     console.log('audioBlob:', audioBlob);
-
-  //     const audioBlobURL = URL.createObjectURL(audioBlob); // Create a URL for the Blob
-  //     localStorage.setItem(
-  //       'uploadedAudio',
-  //       JSON.stringify({ audio: audioBlobURL }) // Store the URL in local storage
-  //     );
-
-  //     setAudioFile(audioBlob);
-  //   };
-
-  //   // Start reading the file as an ArrayBuffer
-  //   reader.readAsArrayBuffer(audioFile);
   // };
 
   const handleUpload = () => {
@@ -88,12 +67,10 @@ const Home = () => {
     reader.readAsArrayBuffer(audioFile);
   };
 
-  const wav2vec2Handler = async (audioFile) => {
-    console.log('wav2vec2 model is currently inactive, Please use Whisper');
-  };
-
   const whisperHandler = () => {
     console.log('Whisper model is started');
+    setIsLoading(true);
+    setTranscription(false);
 
     // Retrieve the uploaded audio data from local storage
     const uploadedAudioData = JSON.parse(localStorage.getItem('uploadedAudio'));
@@ -126,14 +103,117 @@ const Home = () => {
                 response.data.transcription
               );
               setTranscription(response.data.transcription);
+              setIsLoading(false);
             })
             .catch((error) => {
               console.error('Error during Whisper transcription:', error);
+              setIsLoading(false);
             });
         });
     } else {
       console.error('Uploaded audio data not found in local storage.');
     }
+  };
+
+  const smallwhisperHandler = () => {
+    console.log('Whisper model is started');
+    setIsLoading(true);
+    setTranscription(false);
+
+    // Retrieve the uploaded audio data from local storage
+    const uploadedAudioData = JSON.parse(localStorage.getItem('uploadedAudio'));
+
+    if (uploadedAudioData) {
+      // Retrieve the audio data URL and convert it back to a Blob
+      const audioDataURL = uploadedAudioData.audio;
+      fetch(audioDataURL)
+        .then((response) => response.blob())
+        .then((audioBlob) => {
+          // Create a new FormData object
+          const formData = new FormData();
+
+          // Create a new Blob with the .wav format and name it 'audio.wav'
+          const audioWavBlob = new Blob([audioBlob], { type: 'audio/wav' });
+
+          // Append the 'audio.wav' Blob to the FormData
+          formData.append('audio', audioWavBlob, 'audio.wav');
+
+          // Make a POST request to the 'whisper_transcribe' endpoint.
+          axios
+            .post(`${BACKEND_URL}/small_whisper_transcribe`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            })
+            .then((response) => {
+              console.log(
+                'Whisper transcription successful:',
+                response.data.transcription
+              );
+              setTranscription(response.data.transcription);
+              setIsLoading(false);
+            })
+            .catch((error) => {
+              console.error('Error during Whisper transcription:', error);
+              setIsLoading(false);
+            });
+        });
+    } else {
+      console.error('Uploaded audio data not found in local storage.');
+    }
+  };
+
+  const mdwhisperHandler = () => {
+    console.log('Whisper model is started');
+    setIsLoading(true);
+    setTranscription(false);
+
+    // Retrieve the uploaded audio data from local storage
+    const uploadedAudioData = JSON.parse(localStorage.getItem('uploadedAudio'));
+
+    if (uploadedAudioData) {
+      // Retrieve the audio data URL and convert it back to a Blob
+      const audioDataURL = uploadedAudioData.audio;
+      fetch(audioDataURL)
+        .then((response) => response.blob())
+        .then((audioBlob) => {
+          // Create a new FormData object
+          const formData = new FormData();
+
+          // Create a new Blob with the .wav format and name it 'audio.wav'
+          const audioWavBlob = new Blob([audioBlob], { type: 'audio/wav' });
+
+          // Append the 'audio.wav' Blob to the FormData
+          formData.append('audio', audioWavBlob, 'audio.wav');
+
+          // Make a POST request to the 'whisper_transcribe' endpoint.
+          axios
+            .post(`${BACKEND_URL}/md_whisper_transcribe`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            })
+            .then((response) => {
+              console.log(
+                'Whisper transcription successful:',
+                response.data.transcription
+              );
+              setTranscription(response.data.transcription);
+              setIsLoading(false);
+            })
+            .catch((error) => {
+              console.error('Error during Whisper transcription:', error);
+              setIsLoading(false);
+            });
+        });
+    } else {
+      console.error('Uploaded audio data not found in local storage.');
+    }
+  };
+
+  const stopwhisperHandler = () => {
+    setIsLoading(false);
+    setTranscription(false);
   };
 
   return (
@@ -157,6 +237,7 @@ const Home = () => {
           <h4>Transforming speech into text, effortlessly and accurately</h4>
         </p>
       </div>
+
       <div
         style={{
           color: 'black',
@@ -215,22 +296,74 @@ const Home = () => {
           justifyContent: 'center', // Center horizontally
           alignItems: 'center', // Center vertically
           textAlign: 'center',
-          margin: '2% 30%',
+          margin: '2% 10%',
         }}
       >
         <button
           id='button2'
           style={{
             padding: '10px',
+            margin: '0 20px',
             borderRadius: '10px',
-            background: '#66b2b2',
+            background: '#0c6980',
             fontSize: 'large',
+            color: 'white',
           }}
           onClick={() => whisperHandler(audioFile)}
         >
-          Transcribe with Whisper
+          Transcribe with Whisper-Base
+        </button>
+
+        <button
+          id='button2'
+          style={{
+            padding: '10px',
+            margin: '0 20px',
+            borderRadius: '10px',
+            background: '#0c6980',
+            fontSize: 'large',
+            color: 'white',
+          }}
+          onClick={() => smallwhisperHandler(audioFile)}
+        >
+          Transcribe with Whisper-Small
+        </button>
+
+        <button
+          id='button2'
+          style={{
+            padding: '10px',
+            margin: '0 20px',
+            borderRadius: '10px',
+            background: '#0c6980',
+            fontSize: 'large',
+            color: 'white',
+          }}
+          onClick={() => mdwhisperHandler(audioFile)}
+        >
+          Transcribe with Whisper-Medium
         </button>
       </div>
+      {isLoading ? (
+        <div
+          className='loader'
+          style={{
+            margin: '10px 40px',
+            height: 'auto',
+            border: '1px solid gray',
+            padding: '20px',
+            borderRadius: '10px',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography align='center'>
+            <CircularProgress size={24} sx={{ color: '#0c6980' }} />
+          </Typography>
+          Loading The Transcripted Audio......
+        </div>
+      ) : (
+        <></>
+      )}
       {transcription && (
         <div
           style={{
@@ -260,6 +393,31 @@ const Home = () => {
           </p>
         </div>
       )}
+
+      <div
+        style={{
+          height: '50px',
+          justifyContent: 'center', // Center horizontally
+          alignItems: 'center', // Center vertically
+          textAlign: 'center',
+          margin: '2% 30%',
+        }}
+      >
+        <button
+          id='button2'
+          style={{
+            padding: '10px',
+            borderRadius: '10px',
+            // background: '#66b2b2',
+            background: '#801818',
+            fontSize: 'large',
+            color: 'white',
+          }}
+          onClick={() => stopwhisperHandler()}
+        >
+          Stop The Transcription
+        </button>
+      </div>
 
       <div
         style={{
