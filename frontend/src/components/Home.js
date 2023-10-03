@@ -30,7 +30,7 @@ const Home = () => {
   //   } catch (error) {
   //     console.error('Error loading the model:', error);
   //   }
-  // };
+  // }
 
   const handleUpload = () => {
     console.log('Handle upload is started');

@@ -196,7 +196,7 @@ def small_whisper_transcribe():
         return jsonify({"error": "An error occurred while processing the audio."}), 500
 
 
-# Route for uploading audio files
+# Route for uploading audio file
 @app.route("/md_whisper_transcribe", methods=["POST"])
 def md_whisper_transcribe():
     try:
